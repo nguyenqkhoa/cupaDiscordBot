@@ -31,8 +31,9 @@ public final class cupaBot {
         final GatewayDiscordClient gateway = client.login().block();
         File file = new File(System.getProperty("user.dir") + "\\cupaPictures.txt");
         //File file = new File("C:\\Users\\nguye\\IdeaProjects\\cupaDiscordBot\\src\\main\\java\\elementale\\cupaPictures.txt");
+        //
         Scanner input = new Scanner(file);
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
 
         while (input.hasNextLine()) {
             list.add(input.nextLine());
@@ -57,9 +58,8 @@ public final class cupaBot {
                         .timestamp(Instant.now())
                         .build();
 
-                EmbedCreateSpec finalEmbed = embed;
                 final MessageChannel channel = message.getChannel().block();
-                channel.createMessage(finalEmbed).block();
+                channel.createMessage(embed).block();
             }
 
             /*
