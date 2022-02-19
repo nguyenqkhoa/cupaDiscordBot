@@ -29,7 +29,8 @@ public final class cupaBot {
 
         final DiscordClient client = DiscordClient.create(args[0]);
         final GatewayDiscordClient gateway = client.login().block();
-        File file = new File("C:\\Users\\nguye\\IdeaProjects\\cupaDiscordBot\\src\\main\\java\\elementale\\cupaPictures.txt");
+        File file = new File(System.getProperty("user.dir") + "\\cupaPictures.txt");
+        //File file = new File("C:\\Users\\nguye\\IdeaProjects\\cupaDiscordBot\\src\\main\\java\\elementale\\cupaPictures.txt");
         Scanner input = new Scanner(file);
         List<String> list = new ArrayList<String>();
 
