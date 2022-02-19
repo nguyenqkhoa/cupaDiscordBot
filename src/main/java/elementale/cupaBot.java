@@ -27,8 +27,7 @@ public final class cupaBot {
 
     public static void main(final String[] args) throws FileNotFoundException {
 
-        final String token = "OTQ0Njg5NzQ0MzcyMTkxMjc1.YhFQ4g.TMsAVqz61YtUhanTQ7v8bp1hjSk";
-        final DiscordClient client = DiscordClient.create(token);
+        final DiscordClient client = DiscordClient.create(args[0]);
         final GatewayDiscordClient gateway = client.login().block();
         File file = new File("C:\\Users\\nguye\\IdeaProjects\\cupaDiscordBot\\src\\main\\java\\elementale\\cupaPictures.txt");
         Scanner input = new Scanner(file);
