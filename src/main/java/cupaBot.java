@@ -1,22 +1,24 @@
-package elementale;
-
-import discord4j.common.util.Snowflake;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.time.Instant;
 import java.util.*;
 
 public final class cupaBot {
 
+    private static String url = "https://danbooru.donmai.us";
     private static final Map<String, commands.Command> Commands = new HashMap<>();
 
     static {
@@ -41,6 +43,9 @@ public final class cupaBot {
 
         gateway.on(MessageCreateEvent.class).subscribe(event -> {
             final Message message = event.getMessage();
+            /*
+            Gets an image of Cupa from a list of images
+             */
             if("!Cupa".equals(message.getContent())) {
                 Random random = new Random();
                 int min = 1;
@@ -61,13 +66,36 @@ public final class cupaBot {
                 final MessageChannel channel = message.getChannel().block();
                 channel.createMessage(embed).block();
             }
+            if("!Wife".equals(message.getContent())) {
+                String big_url = url + "/posts/random.json?tags=cupa_%28at2.%29";
+                /*
+                JSONParser parser = new JSONParser();
+                JSONObject json = null;
+                */
+                try {
+                    URL url = new URL(big_url);
+                    URLConnection request = url.openConnection();
+                    request.connect();
 
+                    // Convert to a JSON object to print data
+                    JsonParser jp = new JsonParser(); //from gson
+                    JsonElement root = jp.parse(new InputStreamReader((InputStream) request.getContent())); //Convert the input stream to a json element
+                    JsonObject rootobj = root.getAsJsonObject(); //May be an array, may be an object.
+                    String file_url = rootobj.get("file_url").getAsString();
+                    final MessageChannel channel = message.getChannel().block();
+                    channel.createMessage(file_url).block();
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
             /*
             if ("!Cupa".equals(message.getContent())) {
                 final MessageChannel channel = message.getChannel().block();
                 channel.createMessage("https://imgur.com/QJNLicf").block();
             }
-
              */
         });
 

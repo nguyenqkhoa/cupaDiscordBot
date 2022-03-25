@@ -1,5 +1,3 @@
-package elementale;
-
 import discord4j.core.event.domain.message.MessageCreateEvent;
 
 import java.util.Map;
