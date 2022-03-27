@@ -18,7 +18,7 @@ import java.util.*;
 
 public final class cupaBot {
 
-    private static String url = "https://danbooru.donmai.us";
+    private static String danbooru = "https://danbooru.donmai.us/posts/random.json?tags=cupa_%28at2.%29";
     private static final Map<String, commands.Command> Commands = new HashMap<>();
 
     static {
@@ -66,18 +66,15 @@ public final class cupaBot {
                 final MessageChannel channel = message.getChannel().block();
                 channel.createMessage(embed).block();
             }
-            if("!Wife".equals(message.getContent())) {
-                String big_url = url + "/posts/random.json?tags=cupa_%28at2.%29";
-                /*
-                JSONParser parser = new JSONParser();
-                JSONObject json = null;
-                */
+            if("!Danbooru".equals(message.getContent())) {
                 try {
-                    URL url = new URL(big_url);
+                    URL url = new URL(danbooru);
                     URLConnection request = url.openConnection();
                     request.connect();
 
-                    // Convert to a JSON object to print data
+                    /*
+                     * Convert to a JSON object to print data
+                     */
                     JsonParser jp = new JsonParser(); //from gson
                     JsonElement root = jp.parse(new InputStreamReader((InputStream) request.getContent())); //Convert the input stream to a json element
                     JsonObject rootobj = root.getAsJsonObject(); //May be an array, may be an object.
@@ -91,12 +88,6 @@ public final class cupaBot {
                 }
 
             }
-            /*
-            if ("!Cupa".equals(message.getContent())) {
-                final MessageChannel channel = message.getChannel().block();
-                channel.createMessage("https://imgur.com/QJNLicf").block();
-            }
-             */
         });
 
 
