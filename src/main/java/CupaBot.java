@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
+import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -29,11 +30,18 @@ public final class CupaBot {
     private static final Map<String, Command> commands = new HashMap<>();
     private static final ReactionEmoji leftArrow = ReactionEmoji.of(282734396686204928L, "leftArrow", false);
     private static final ReactionEmoji rightArrow = ReactionEmoji.of(282734401631158273L, "rightArrow", false);
-    private static final Button buttonTest = Button.primary("MoreCupa", "Cupa?");
+    private static final ReactionEmoji driveLeft = ReactionEmoji.of(281283810895724554L, "driveLeft", false);
+    private static final ReactionEmoji rightArrow2 = ReactionEmoji.of(282734407587069952L, "rightArrow2", false);
+    private static final Button buttonCupa = Button.primary("MoreCupa", "Cupa?");
+    private static final Button buttonCupaGoogleDrive = Button.primary("CupaDrive", "Cupa Drive?");
     private static final Button leftButton = Button.primary("LeftArrow", leftArrow);
     private static final Button rightButton = Button.primary("RightArrow", rightArrow);
-    private static List<String> cupaPictureList = new ArrayList<>();
+    private static final Button driveLeftButton = Button.primary("driveLeft", driveLeft);
+    private static final Button rightButton2 = Button.primary("RightArrow2", rightArrow2);
+    private static final List<String> cupaPictureList = new ArrayList<>();
+    private static List<com.google.api.services.drive.model.File> imageFiles;
     private static int cupaIndex = 1;
+    private static int cupaDriveIndex = 1;
 
     static {
         commands.put("ping", event -> event.getMessage()
@@ -45,25 +53,52 @@ public final class CupaBot {
                 .createMessage(selectRandomCupaToEmbed()).block()
                 .getChannel().block()
                 .createMessage(MessageCreateSpec.builder()
-                        .addComponent(ActionRow.of(leftButton, buttonTest, rightButton))
+                        .addComponent(ActionRow.of(leftButton, buttonCupa, rightButton))
                         .build())
                 .subscribe());
 
         commands.put("Left", event -> event.getMessage()
                 .getChannel().block()
-                .createMessage(selectCupaToEmbed(cupaIndex)).block()
+                .createMessage(selectCupaToEmbed()).block()
                 .getChannel().block()
                 .createMessage(MessageCreateSpec.builder()
-                        .addComponent(ActionRow.of(leftButton, buttonTest, rightButton))
+                        .addComponent(ActionRow.of(leftButton, buttonCupa, rightButton))
                         .build())
                 .subscribe());
 
         commands.put("Right", event -> event.getMessage()
                 .getChannel().block()
-                .createMessage(selectCupaToEmbed(cupaIndex)).block()
+                .createMessage(selectCupaToEmbed()).block()
                 .getChannel().block()
                 .createMessage(MessageCreateSpec.builder()
-                        .addComponent(ActionRow.of(leftButton, buttonTest, rightButton))
+                        .addComponent(ActionRow.of(leftButton, buttonCupa, rightButton))
+                        .build())
+                .subscribe());
+
+        commands.put("CupaDrive", event -> event.getMessage()
+                .getChannel().block()
+                .createMessage(selectCupaToEmbedFromGoogleDrive()).block()
+                .getChannel().block()
+                .createMessage(MessageCreateSpec.builder()
+                        .addComponent(ActionRow.of(driveLeftButton, buttonCupaGoogleDrive, rightButton2))
+                        .build())
+                .subscribe());
+
+        commands.put("DriveLeft", event -> event.getMessage()
+                .getChannel().block()
+                .createMessage(selectCupaToEmbedFromGoogleDrive()).block()
+                .getChannel().block()
+                .createMessage(MessageCreateSpec.builder()
+                        .addComponent(ActionRow.of(driveLeftButton, buttonCupaGoogleDrive, rightButton2))
+                        .build())
+                .subscribe());
+
+        commands.put("Right2", event -> event.getMessage()
+                .getChannel().block()
+                .createMessage(selectCupaToEmbedFromGoogleDrive()).block()
+                .getChannel().block()
+                .createMessage(MessageCreateSpec.builder()
+                        .addComponent(ActionRow.of(driveLeftButton, buttonCupaGoogleDrive, rightButton2))
                         .build())
                 .subscribe());
 
@@ -75,7 +110,8 @@ public final class CupaBot {
 
     }
 
-    public static void main(final String[] args) throws FileNotFoundException {
+    public static void main(final String[] args){
+        createGoogleDriveList();
 
         getCupaPicturesFromFile();
 
@@ -106,7 +142,7 @@ public final class CupaBot {
                 .flatMap(channel -> {
 
                     Mono<Message> createMessageMono = channel.createMessage(MessageCreateSpec.builder()
-                            .addComponent(ActionRow.of(buttonTest))
+                            .addComponent(ActionRow.of(buttonCupa))
                             .build());
 
                     Mono<Void> tempListener = client.on(ButtonInteractionEvent.class, event -> {
@@ -122,6 +158,19 @@ public final class CupaBot {
                                     System.out.println("Right!");
                                     cupaIndex++;
                                     return event.reply("!Right").withEphemeral(true);
+                                } else if(event.getCustomId().equals("CupaDrive")) {
+                                    System.out.println("MORE CUPA!");
+                                    return event.reply("!CupaDrive").withEphemeral(true);
+                                }
+                                else if(event.getCustomId().equals("driveLeft")){
+                                    System.out.println("DriveLeft!");
+                                    cupaDriveIndex--;
+                                    return event.reply("!DriveLeft").withEphemeral(true);
+                                }
+                                else if(event.getCustomId().equals("RightArrow2")){
+                                    System.out.println("Right2!");
+                                    cupaDriveIndex++;
+                                    return event.reply("!Right2").withEphemeral(true);
                                 }
                                 else {
                                     return Mono.empty();
@@ -136,6 +185,28 @@ public final class CupaBot {
 
 
         client.onDisconnect().block();
+    }
+
+    private static void createGoogleDriveList(){
+        try {
+            // Path to your credentials JSON file
+            String credentialsPath = (System.getProperty("user.dir") + "\\cupaimagesreal.json");
+            // ID of the public Google Drive folder
+            String folderId = "1JIKFHJUOCek6-X-uVelYui8yAd4IfM4m";
+
+            GoogleDriveImageLinks googleDriveImageLinks = new GoogleDriveImageLinks(credentialsPath);
+            imageFiles = googleDriveImageLinks.listImagesInFolder(folderId);
+
+            for (com.google.api.services.drive.model.File imageFile : imageFiles) {
+                System.out.println("File Name: " + imageFile.getName());
+                System.out.println("File ID: " + imageFile.getId());
+                System.out.println("Download Link: " + imageFile.getWebContentLink());
+                System.out.println("-----");
+            }
+            System.out.println(imageFiles.size());
+        } catch (IOException | GeneralSecurityException exception){
+            exception.printStackTrace();
+        }
     }
 
     private static void getCupaPicturesFromFile() {
@@ -154,22 +225,22 @@ public final class CupaBot {
         System.out.println("Cupa pictures: " + cupaPictureList.size());
     }
 
-    private static EmbedCreateSpec selectCupaToEmbed(int cupaIndex) {
+    private static EmbedCreateSpec selectCupaToEmbed() {
 
         int max = cupaPictureList.size();
         System.out.println("Cupa index: " + cupaIndex);
-        if(cupaIndex <= 0){
-            cupaIndex = max;
+        if(cupaIndex < 0){
+            cupaIndex = max - 1;
             System.out.println("Sweeping back to the top: " + cupaIndex);
         }
-        if(cupaIndex > max){
-            cupaIndex = 1;
+        if(cupaIndex > max - 1){
+            cupaIndex = 0;
             System.out.println("Sweeping back to the start: " + cupaIndex);
         }
 
         String link = cupaPictureList.get(cupaIndex);
 
-        EmbedCreateSpec embed = EmbedCreateSpec.builder()
+        return EmbedCreateSpec.builder()
                 .color(Color.BLUE)
                 .title("Cupa")
                 .description("Cupa Creeper #" + cupaIndex + "!")
@@ -177,7 +248,33 @@ public final class CupaBot {
                 .timestamp(Instant.now())
                 .build();
 
-        return embed;
+    }
+
+    private static EmbedCreateSpec selectCupaToEmbedFromGoogleDrive(){
+        int max = imageFiles.size();
+        System.out.println("Cupa drive index: " + cupaDriveIndex);
+        if(cupaDriveIndex < 0){
+            cupaDriveIndex = max - 1;
+            System.out.println("Sweeping back to the top: " + cupaDriveIndex);
+        }
+        if(cupaDriveIndex > max - 1){
+            cupaDriveIndex = 0;
+            System.out.println("Sweeping back to the start: " + cupaDriveIndex);
+        }
+
+        String link = "https://drive.google.com/uc?id=" + imageFiles.get(cupaDriveIndex).getId();
+        System.out.println(link);
+
+        return EmbedCreateSpec.builder()
+                .color(Color.BLUE)
+                .title("Cupa")
+                .description("Cupa Creeper #" + cupaDriveIndex + "!")
+                .addField("File name: ", imageFiles.get(cupaDriveIndex).getName(), false)
+                .thumbnail(link)
+                .image(link)
+                .timestamp(Instant.now())
+                .build();
+
     }
 
     private static EmbedCreateSpec selectRandomCupaToEmbed() {
@@ -192,15 +289,13 @@ public final class CupaBot {
         cupaIndex = num;
         System.out.println(cupaIndex);
 
-        EmbedCreateSpec embed = EmbedCreateSpec.builder()
+        return EmbedCreateSpec.builder()
                 .color(Color.BLUE)
                 .title("Cupa")
                 .description("Cupa Creeper #" + num + "!")
                 .image(link)
                 .timestamp(Instant.now())
                 .build();
-
-        return embed;
     }
 
     private static String getDanbooruLink() throws IOException {
@@ -210,8 +305,7 @@ public final class CupaBot {
 
         JsonObject jsonObject = JsonParser.parseReader(new InputStreamReader((InputStream) request.getContent())).getAsJsonObject();
 
-        String file_url = jsonObject.get("file_url").getAsString();
-        return file_url;
+        return jsonObject.get("file_url").getAsString();
     }
 
 }
