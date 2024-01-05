@@ -1,3 +1,5 @@
 # Project exclude paths
 /target/
 cupaimagesreal.json
+client_secret.json
+tokens/StoredCredential

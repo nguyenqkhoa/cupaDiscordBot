@@ -4,11 +4,12 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
+import discord4j.core.event.domain.lifecycle.ReadyEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
-import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
+import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.object.reaction.ReactionEmoji;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
@@ -42,6 +43,7 @@ public final class CupaBot {
     private static List<com.google.api.services.drive.model.File> imageFiles;
     private static int cupaIndex = 1;
     private static int cupaDriveIndex = 1;
+    private static final Snowflake botChannelId = Snowflake.of(944693683905769536L);
 
     static {
         commands.put("ping", event -> event.getMessage()
@@ -106,8 +108,6 @@ public final class CupaBot {
                 .getChannel().block()
                 .createMessage(getDanbooruLink()).block());
 
-
-
     }
 
     public static void main(final String[] args){
@@ -119,6 +119,12 @@ public final class CupaBot {
                 .build()
                 .login()
                 .block();
+
+        client.getEventDispatcher().on(ReadyEvent.class)
+                .subscribe(event -> {
+                    System.out.println("Bot is ready!");
+                    setDefaultGreetingChannel(event.getClient());
+                });
 
         client.getEventDispatcher().on(MessageCreateEvent.class)
                 .subscribe(event -> {
@@ -135,15 +141,9 @@ public final class CupaBot {
                             }
                         });
 
-        Snowflake channelId = Snowflake.of(944693683905769536L);
-
-        client.getChannelById(channelId)
+        client.getChannelById(botChannelId)
                 .ofType(GuildMessageChannel.class)
                 .flatMap(channel -> {
-
-                    Mono<Message> createMessageMono = channel.createMessage(MessageCreateSpec.builder()
-                            .addComponent(ActionRow.of(buttonCupa))
-                            .build());
 
                     Mono<Void> tempListener = client.on(ButtonInteractionEvent.class, event -> {
                                 if(event.getCustomId().equals("MoreCupa")){
@@ -179,12 +179,21 @@ public final class CupaBot {
                             .onErrorResume(TimeoutException.class, ignore -> Mono.empty())
                             .then();
 
-                    return createMessageMono.then(tempListener);
+                    return tempListener;
                 }).subscribe();
 
-
-
         client.onDisconnect().block();
+    }
+
+    private static void setDefaultGreetingChannel(GatewayDiscordClient client) {
+        Snowflake guildID = Snowflake.of(217095609507774464L);
+        client.getGuildById(guildID).flatMap(guild ->
+                        guild.getChannelById(botChannelId).ofType(TextChannel.class))
+                .subscribe(channel -> {
+                    System.out.println("Default greeting channel set to: " + channel.getName());
+                    channel.createMessage("Cupa online!").block();
+                });
+
     }
 
     private static void createGoogleDriveList(){
