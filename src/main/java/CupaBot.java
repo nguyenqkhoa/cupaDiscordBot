@@ -44,6 +44,9 @@ public final class CupaBot {
     private static int cupaIndex = 1;
     private static int cupaDriveIndex = 1;
     private static final Snowflake botChannelId = Snowflake.of(944693683905769536L);
+    public static final String twitchClientID = System.getenv("twitchClientId");
+    private static final String discordToken = System.getenv("discordToken");
+    public static final ArrayList<String> twitchChannels = new ArrayList<>(Arrays.asList("nguyenqkhoa", "vitelotte", "deathbymattam"));
 
     static {
         commands.put("ping", event -> event.getMessage()
@@ -115,7 +118,7 @@ public final class CupaBot {
 
         getCupaPicturesFromFile();
 
-        final GatewayDiscordClient client = DiscordClientBuilder.create(args[0])
+        final GatewayDiscordClient client = DiscordClientBuilder.create(discordToken)
                 .build()
                 .login()
                 .block();
@@ -141,6 +144,16 @@ public final class CupaBot {
                             }
                         });
 
+        typeToGetCupa(client);
+
+        client.on(MessageCreateEvent.class)
+                .flatMap(TwitchIntegration::twitchLive)
+                .subscribe();
+
+        client.onDisconnect().block();
+    }
+
+    private static void typeToGetCupa(GatewayDiscordClient client) {
         client.getChannelById(botChannelId)
                 .ofType(GuildMessageChannel.class)
                 .flatMap(channel -> {
@@ -181,8 +194,6 @@ public final class CupaBot {
 
                     return tempListener;
                 }).subscribe();
-
-        client.onDisconnect().block();
     }
 
     private static void setDefaultGreetingChannel(GatewayDiscordClient client) {
@@ -198,20 +209,20 @@ public final class CupaBot {
 
     private static void createGoogleDriveList(){
         try {
-            // Path to your credentials JSON file
             String credentialsPath = (System.getProperty("user.dir") + "\\cupaimagesreal.json");
-            // ID of the public Google Drive folder
             String folderId = "1JIKFHJUOCek6-X-uVelYui8yAd4IfM4m";
 
             GoogleDriveImageLinks googleDriveImageLinks = new GoogleDriveImageLinks(credentialsPath);
             imageFiles = googleDriveImageLinks.listImagesInFolder(folderId);
 
+            /*
             for (com.google.api.services.drive.model.File imageFile : imageFiles) {
                 System.out.println("File Name: " + imageFile.getName());
                 System.out.println("File ID: " + imageFile.getId());
                 System.out.println("Download Link: " + imageFile.getWebContentLink());
                 System.out.println("-----");
             }
+             */
             System.out.println(imageFiles.size());
         } catch (IOException | GeneralSecurityException exception){
             exception.printStackTrace();
